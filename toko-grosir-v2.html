@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrosirAlfa-Mabruk</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+<div id="loginPage" class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+  <div class="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+    <h1 class="text-3xl font-bold text-center mb-2">Alfa-Mabruk
+    <p class="text-center text-gray-500 text-sm mb-6">Login Kasir / Admin</p>
+    <div class="space-y-3">
+      <input id="loginUser" placeholder="Username" value="admin" class="w-full border rounded-lg px-4 py-3">
+      <input id="loginPass" type="password" placeholder="Password" value="admin123" class="w-full border rounded-lg px-4 py-3">
+      <button onclick="doLogin()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">MASUK</button>
+    </div>
+    <div class="mt-4 text-xs bg-gray-50 p-3 rounded"><br></div>
+  </div>
+</div>
+<div id="mainApp" class="hidden flex h-screen">
+  <div class="w-64 bg-slate-900 text-white p-4 flex flex-col">
+    <h1 class="font-bold mb-4">Alfa-Mabruk</h1>
+    <div class="text-xs mb-4 p-2 bg-slate-800 rounded"><span id="roleBadge">admin</span> - <span id="userBadge">admin</span> <button onclick="location.reload()" class="text-red-400 ml-2">Logout</button></div>
+    <nav class="space-y-2 flex-1">
+      <button onclick="showPage('pos')" class="w-full text-left px-4 py-3 rounded bg-blue-600">Kasir POS</button>
+      <button onclick="showPage('produk')" id="nav-produk" class="w-full text-left px-4 py-3 rounded hover:bg-slate-700">Produk & Stok</button>
+      <button onclick="showPage('riwayat')" class="w-full text-left px-4 py-3 rounded hover:bg-slate-700">Riwayat</button>
+      <button onclick="showPage('laporan')" id="nav-laporan" class="w-full text-left px-4 py-3 rounded hover:bg-slate-700">Laporan</button>
+      <button onclick="showPage('setting')" id="nav-setting" class="w-full text-left px-4 py-3 rounded hover:bg-slate-700">Setting & Printer</button>
+    </nav>
+    <div class="p-3 bg-slate-800 rounded text-xs">
+      <div>Omzet: <span id="todaySales">Rp 0</span></div>
+      <button onclick="connectBTPrinter()" class="w-full mt-2 bg-green-600 py-2 rounded">Connect Printer BT</button>
+      <div id="btStatus" class="text-[10px] text-gray-400">Printer: Belum connect</div>
+    </div>
+  </div>
+  <div class="flex-1 overflow-auto">
+    <div id="page-pos" class="p-4 h-full flex flex-col lg:flex-row gap-4">
+      <div class="flex-1">
+        <div class="bg-white p-3 rounded-xl shadow flex gap-2">
+          <input id="searchInput" onkeyup="filterProducts()" placeholder="Scan barcode / nama" class="flex-1 px-4 py-3 border rounded-lg">
+          <button onclick="startScanner()" class="bg-black text-white px-4 py-3 rounded-lg">Scan Kamera</button>
+        </div>
+        <div id="reader" class="hidden mt-3 bg-black rounded-xl overflow-hidden"></div>
+        <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4"></div>
+      </div>
+      <div class="w-full lg:w-[430px] bg-white rounded-xl shadow flex flex-col">
+        <div class="p-4 border-b"><h2 class="font-bold">Keranjang <span id="cartCount" class="bg-blue-600 text-white px-2 py-1 rounded-full text-xs">0</span></h2><div class="text-xs mt-2">Pelanggan: <input id="customerName" placeholder="Umum" class="border rounded px-2 py-1 w-20"></div></div>
+        <div id="cartItems" class="flex-1 overflow-auto p-2 space-y-2"></div>
+        <div class="p-4 border-t bg-gray-50 space-y-2">
+          <div class="flex justify-between"><span>Subtotal</span><span id="subtotal">Rp 0</span></div>
+          <div class="flex justify-between"><span>Diskon %</span><input id="diskonInput" type="number" value="0" oninput="renderCart()" class="w-16 border rounded px-2 text-right"></div>
+          <div class="flex justify-between font-bold text-xl"><span>Total</span><span id="total" class="text-blue-600">Rp 0</span></div>
+          <div class="flex gap-2"><input id="bayarInput" type="number" placeholder="Bayar" oninput="hitungKembali()" class="flex-1 border rounded-lg px-3 py-3"><div class="text-xs">Kembali:<br><b id="kembali">Rp 0</b></div></div>
+          <button onclick="prosesBayar()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">BAYAR</button>
+          <div class="grid grid-cols-2 gap-2"><button onclick="printWithBT()" class="bg-green-600 text-white py-2 rounded text-sm">Print BT Thermal</button><button onclick="window.print()" class="bg-gray-800 text-white py-2 rounded text-sm">Print Biasa</button></div>
+        </div>
+      </div>
+    </div>
+    <div id="page-produk" class="hidden p-6"><div class="flex justify-between mb-4"><h2 class="text-2xl font-bold">Produk</h2><button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">+ Tambah</button></div><div class="bg-white rounded-xl shadow overflow-auto"><table class="w-full text-sm"><thead class="bg-gray-100"><tr><th class="p-3 text-left">Barcode</th><th>Nama</th><th>Min Grosir</th><th>Ecer</th><th>Grosir</th><th>Aksi</th></tr></thead><tbody id="produkTable"></tbody></table></div></div>
+    <div id="page-riwayat" class="hidden p-6"><h2 class="text-2xl font-bold mb-4">Riwayat</h2><div class="bg-white rounded-xl shadow p-4"><table class="w-full text-sm"><thead class="bg-gray-100"><tr><th>Waktu</th><th>ID</th><th>Customer</th><th>Total</th><th>Aksi</th></tr></thead><tbody id="riwayatTable"></tbody></table></div></div>
+    <div id="page-laporan" class="hidden p-6"><h2 class="text-2xl font-bold mb-4">Laporan</h2><div id="lapOmzet" class="text-2xl font-bold"></div><button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded mt-4">Export CSV</button></div>
+    <div id="page-setting" class="hidden p-6"><h2 class="text-2xl font-bold mb-4">Setting</h2><div class="bg-white p-6 rounded-xl max-w-lg space-y-3"><input id="setNamaToko" value="TOKO GROSIR MAJU JAYA" class="w-full border rounded px-3 py-2"><input id="setMinGrosir" type="number" value="12" class="w-full border rounded px-3 py-2"><button onclick="saveSetting()" class="bg-blue-600 text-white px-4 py-2 rounded">Simpan</button></div></div>
+  </div>
+</div>
+<div id="modalProduk" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div class="bg-white rounded-xl p-6 w-[400px]"><input type="hidden" id="editId"><div class="space-y-2"><input id="mBarcode" placeholder="Barcode" class="w-full border rounded px-3 py-2"><input id="mNama" placeholder="Nama Produk" class="w-full border rounded px-3 py-2"><input id="mStok" type="number" placeholder="Stok" class="w-full border rounded px-3 py-2"><input id="mMinGrosir" type="number" placeholder="Min Qty Grosir" class="w-full border rounded px-3 py-2"><input id="mModal" type="number" placeholder="Modal" class="w-full border rounded px-3 py-2"><input id="mEcer" type="number" placeholder="Ecer" class="w-full border rounded px-3 py-2"><input id="mGrosir" type="number" placeholder="Grosir" class="w-full border rounded px-3 py-2"></div><div class="flex gap-2 mt-4"><button onclick="saveProduk()" class="flex-1 bg-blue-600 text-white py-2 rounded">Simpan</button><button onclick="closeModal()" class="flex-1 bg-gray-200 py-2 rounded">Batal</button></div></div></div>
+<div id="struk" class="hidden"><div id="strukContent"></div></div>
+<script>
+let users=[{u:'admin',p:'admin123',role:'ADMIN'},{u:'kasir',p:'kasir123',role:'KASIR'}]; let currentUser=null;
+let products=JSON.parse(localStorage.getItem('grosir_v2')||'null')||[{id:1,barcode:'8991001',nama:'Beras 5kg',stok:20,modal:55000,ecer:65000,grosir:60000,minGrosir:5},{id:2,barcode:'8991002',nama:'Minyak 2L',stok:30,modal:26000,ecer:32000,grosir:29000,minGrosir:6}];
+let cart=[]; let transactions=JSON.parse(localStorage.getItem('grosir_trans_v2')||'[]'); let settings=JSON.parse(localStorage.getItem('grosir_set')||'null')||{nama:'TOKO GROSIR MAJU JAYA',minDefault:12}; let btChar=null; let html5QrCode=null;
+function saveLS(){localStorage.setItem('grosir_v2',JSON.stringify(products));localStorage.setItem('grosir_trans_v2',JSON.stringify(transactions));localStorage.setItem('grosir_set',JSON.stringify(settings));}
+function doLogin(){let u=document.getElementById('loginUser').value,p=document.getElementById('loginPass').value;let f=users.find(x=>x.u==u&&x.p==p);if(!f){alert('salah');return;}currentUser=f;document.getElementById('loginPage').classList.add('hidden');document.getElementById('mainApp').classList.remove('hidden');document.getElementById('roleBadge').innerText=f.role;renderGrid();}
+function showPage(p){document.querySelectorAll('[id^=page-]').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+p).classList.remove('hidden');if(p=='produk')renderProdukTable();if(p=='riwayat')renderRiwayat();}
+function filterProducts(){let q=document.getElementById('searchInput').value.toLowerCase();let list=products.filter(pr=>pr.nama.toLowerCase().includes(q)||pr.barcode.includes(q));renderGrid(list);}
+function renderGrid(list=products){document.getElementById('productGrid').innerHTML=list.map(p=>`<div onclick="addToCart(${p.id})" class="bg-white rounded-xl p-3 shadow cursor-pointer"><div class="text-[10px]">${p.barcode} Min:${p.minGrosir}</div><div class="font-bold text-sm">${p.nama}</div><div class="text-xs">Stok:${p.stok} Ecer:Rp${p.ecer.toLocaleString()} Grosir:Rp${p.grosir.toLocaleString()}</div></div>`).join('');}
+function addToCart(id){let p=products.find(x=>x.id==id);let ex=cart.find(c=>c.id==id);if(ex)ex.qty++;else cart.push({id:p.id,nama:p.nama,ecer:p.ecer,grosir:p.grosir,minGrosir:p.minGrosir||settings.minDefault,qty:1});renderCart();}
+function getHarga(c){return c.qty>=c.minGrosir?c.grosir:c.ecer;}
+function renderCart(){let d=parseFloat(document.getElementById('diskonInput').value)||0;let con=document.getElementById('cartItems');if(cart.length==0)con.innerHTML='Kosong';else con.innerHTML=cart.map((c,i)=>{let h=getHarga(c);return `<div class="flex justify-between bg-gray-50 p-2 rounded"><div><div class="font-bold text-sm">${c.nama} ${c.qty>=c.minGrosir?'(GROSIR)':''}</div><div class="text-xs">Rp${h.toLocaleString()} x ${c.qty}</div></div><div class="flex gap-1"><button onclick="cart[${i}].qty--;if(cart[${i}].qty<=0)cart.splice(${i},1);renderCart()" class="w-7 h-7 bg-white border rounded">-</button><span>${c.qty}</span><button onclick="cart[${i}].qty++;renderCart()" class="w-7 h-7 bg-white border rounded">+</button></div></div>`}).join('');let sub=0;cart.forEach(c=>sub+=getHarga(c)*c.qty);let total=sub-(sub*d/100);document.getElementById('subtotal').innerText='Rp'+sub.toLocaleString();document.getElementById('total').innerText='Rp'+total.toLocaleString();document.getElementById('cartCount').innerText=cart.reduce((a,b)=>a+b.qty,0);let bayar=parseInt(document.getElementById('bayarInput').value)||0;document.getElementById('kembali').innerText='Rp'+(bayar-total>=0?(bayar-total).toLocaleString():0);}
+function hitungKembali(){renderCart();}
+function prosesBayar(){if(cart.length==0)return;let total=parseInt(document.getElementById('total').innerText.replace(/[^0-9]/g,''));let bayar=parseInt(document.getElementById('bayarInput').value)||0;if(bayar<total){alert('kurang');return;}cart.forEach(c=>{let p=products.find(x=>x.id==c.id);if(p)p.stok-=c.qty;});let tr={id:Date.now(),waktu:new Date().toLocaleString('id-ID'),customer:document.getElementById('customerName').value||'Umum',items:[...cart.map(c=>({...c,harga:getHarga(c)}))],total,bayar};transactions.unshift(tr);saveLS();document.getElementById('strukContent').innerText=settings.nama+'\n'+tr.items.map(i=>`${i.nama} ${i.qty}x${i.harga}`).join('\n')+'\nTotal:'+total;printWithBT(true);cart=[];renderCart();renderGrid();alert('Berhasil');}
+function renderProdukTable(){document.getElementById('produkTable').innerHTML=products.map(p=>`<tr class="border-b"><td class="p-2">${p.barcode}</td><td>${p.nama}</td><td>${p.minGrosir}</td><td>${p.ecer}</td><td>${p.grosir}</td><td><button onclick="editProduk(${p.id})">Edit</button></td></tr>`).join('');}
+function openModal(){document.getElementById('modalProduk').classList.remove('hidden');}
+function closeModal(){document.getElementById('modalProduk').classList.add('hidden');}
+function saveProduk(){let id=parseInt(document.getElementById('editId').value);let obj={id:id||Date.now(),barcode:document.getElementById('mBarcode').value,nama:document.getElementById('mNama').value,stok:parseInt(document.getElementById('mStok').value)||0,minGrosir:parseInt(document.getElementById('mMinGrosir').value)||12,modal:parseInt(document.getElementById('mModal').value)||0,ecer:parseInt(document.getElementById('mEcer').value)||0,grosir:parseInt(document.getElementById('mGrosir').value)||0};if(id){let idx=products.findIndex(p=>p.id==id);products[idx]=obj;}else products.push(obj);saveLS();closeModal();renderGrid();renderProdukTable();}
+function editProduk(id){let p=products.find(x=>x.id==id);openModal();document.getElementById('editId').value=p.id;document.getElementById('mBarcode').value=p.barcode;document.getElementById('mNama').value=p.nama;document.getElementById('mStok').value=p.stok;document.getElementById('mMinGrosir').value=p.minGrosir;document.getElementById('mModal').value=p.modal;document.getElementById('mEcer').value=p.ecer;document.getElementById('mGrosir').value=p.grosir;}
+function renderRiwayat(){document.getElementById('riwayatTable').innerHTML=transactions.map(t=>`<tr><td>${t.waktu}</td><td>${t.id}</td><td>${t.customer}</td><td>Rp${t.total.toLocaleString()}</td><td><button onclick="window.print()">Print</button></td></tr>`).join('');}
+function saveSetting(){settings.nama=document.getElementById('setNamaToko').value;settings.minDefault=parseInt(document.getElementById('setMinGrosir').value);saveLS();alert('saved');}
+function startScanner(){document.getElementById('reader').classList.remove('hidden');if(!html5QrCode)html5QrCode=new Html5Qrcode('reader');html5QrCode.start({facingMode:'environment'},{fps:10,qrbox:250},(decoded)=>{let p=products.find(x=>x.barcode==decoded);if(p)addToCart(p.id);});}
+async function connectBTPrinter(){try{let device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['000018f0-0000-1000-8000-00805f9b34fb']});let server=await device.gatt.connect();let services=await server.getPrimaryServices();for(let s of services){let chars=await s.getCharacteristics();for(let c of chars){if(c.properties.write){btChar=c;break;}}if(btChar)break;}document.getElementById('btStatus').innerText='Connected:'+device.name;}catch(e){alert(e.message);}}
+async function printWithBT(silent){let text=document.getElementById('strukContent').innerText;if(!btChar){if(!silent)window.print();return;}try{let enc=new TextEncoder();let data=enc.encode(text+'\n\n\n');for(let i=0;i<data.length;i+=100){await btChar.writeValue(data.slice(i,i+100));}}catch(e){alert(e.message);}}
+function exportCSV(){let csv='Waktu,ID,Customer,Total\n'+transactions.map(t=>`${t.waktu},${t.id},${t.customer},${t.total}`).join('\n');let blob=new Blob([csv],{type:'text/csv'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download='laporan.csv';a.click();}
+</script>
+</body>
+</html>
